@@ -1,6 +1,6 @@
 #import "CreateThumbnail.h"
 
-@interface ImageUtilities
+@interface ImageUtilities : NSObject
 + (UIImage *)imageWithImage:(UIImage *)image scaledToSize:(CGSize)size;
 + (UIImage *)imageWithImage:(UIImage *)image scaledToMaxWidth:(CGFloat)width maxHeight:(CGFloat)height;
 @end
@@ -72,7 +72,7 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
         UIImage *thumbnail = [UIImage imageWithCGImage:imgRef];
 		// Resize image
 		if (maxWidth > 0 && maxHeight > 0) {
-			thumbnail = [ImageUtilities imageWithImage:myLargeImage scaledToMaxWidth:maxWidth maxHeight:maxHeight];
+			thumbnail = [ImageUtilities imageWithImage:thumbnail scaledToMaxWidth:maxWidth maxHeight:maxHeight];
 		}
 
         // Save to temp directory
