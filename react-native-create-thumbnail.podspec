@@ -9,12 +9,12 @@ Pod::Spec.new do |s|
   s.description  = <<-DESC
                   react-native-create-thumbnail
                    DESC
-  s.homepage     = "https://github.com/souvik-ghosh/react-native-create-thumbnail"
+  s.homepage     = "https://github.com/cplus98/react-native-create-thumbnail"
   s.license      = "MIT"
   # s.license    = { :type => "MIT", :file => "FILE_LICENSE" }
-  s.authors      = { "Souvik" => "emailtosvk@gmail.com" }
+  s.authors      = { "Souvik" => "cplus98@gmail.com" }
   s.platforms    = { :ios => "9.0" }
-  s.source       = { :git => "https://github.com/souvik-ghosh/react-native-create-thumbnail.git", :tag => "#{s.version}" }
+  s.source       = { :git => "https://github.com/cplus98/react-native-create-thumbnail.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,swift}"
   s.requires_arc = true
