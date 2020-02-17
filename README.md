@@ -58,7 +58,7 @@ createThumbnail({
 | Property  |            Type             | Description                                        |
 | --------- | :-------------------------: | :------------------------------------------------- |
 | url       |     `String` (required)     | Path to video file (local or remote)               |
-| timeStamp |   `Number` (default `1`)    | Thumbnail timestamp (in seconds)                   |
+| timeStamp |   `Number` (default `0`)    | Thumbnail timestamp (in milliseconds)              |
 | type      | `String` (default `remote`) | Resource type, can be one of: `remote`, or `local` |
 | format    |  `String` (default `jpeg`)  | Thumbnail format, can be one of: `jpeg`, or `png`  |
 

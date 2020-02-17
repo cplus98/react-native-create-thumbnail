@@ -1,5 +1,41 @@
 #import "CreateThumbnail.h"
 
+@interface ImageUtilities
++ (UIImage *)imageWithImage:(UIImage *)image scaledToSize:(CGSize)size;
++ (UIImage *)imageWithImage:(UIImage *)image scaledToMaxWidth:(CGFloat)width maxHeight:(CGFloat)height;
+@end
+
+@implementation ImageUtilities
+
++ (UIImage *)imageWithImage:(UIImage *)image scaledToSize:(CGSize)size {
+    if ([[UIScreen mainScreen] respondsToSelector:@selector(scale)]) {
+        UIGraphicsBeginImageContextWithOptions(size, NO, [[UIScreen mainScreen] scale]);
+    } else {
+        UIGraphicsBeginImageContext(size);
+    }
+    [image drawInRect:CGRectMake(0, 0, size.width, size.height)];
+    UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();    
+    UIGraphicsEndImageContext();
+
+    return newImage;
+}
+
++ (UIImage *)imageWithImage:(UIImage *)image scaledToMaxWidth:(CGFloat)width maxHeight:(CGFloat)height {
+    CGFloat oldWidth = image.size.width;
+    CGFloat oldHeight = image.size.height;
+
+    CGFloat scaleFactor = (oldWidth > oldHeight) ? width / oldWidth : height / oldHeight;
+
+    CGFloat newHeight = oldHeight * scaleFactor;
+    CGFloat newWidth = oldWidth * scaleFactor;
+    CGSize newSize = CGSizeMake(newWidth, newHeight);
+
+    return [ImageUtilities imageWithImage:image scaledToSize:newSize];
+}
+
+@end
+
+
 @implementation CreateThumbnail
 
 RCT_EXPORT_MODULE()
@@ -10,7 +46,10 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
     int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 1;
     NSString *type = (NSString *)[config objectForKey:@"type"] ?: @"remote";
     NSString *format = (NSString *)[config objectForKey:@"format"] ?: @"jpeg";
-    unsigned long long CTMaxDirSize = 104857600; // 100mb
+    int quality = [[config objectForKey:@"quality"] intValue] ?: 100;
+    int maxWidth = [[config objectForKey:@"maxWidth"] intValue] ?: 0.0;
+    int maxHeight = [[config objectForKey:@"maxHeight"] intValue] ?: 0.0;
+    unsigned long long CTMaxDirSize = [[config objectForKey:@"maxDirsize"] longLongValue] ?: 26214400; // 25mb
     
     @try {
         NSURL *vidURL = nil;
@@ -27,10 +66,15 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
         generator.appliesPreferredTrackTransform = YES;
         
         NSError *err = NULL;
-        CMTime time = CMTimeMake(timeStamp, 1);
+        CMTime time = CMTimeMake(timeStamp, 1000);
         
         CGImageRef imgRef = [generator copyCGImageAtTime:time actualTime:NULL error:&err];
         UIImage *thumbnail = [UIImage imageWithCGImage:imgRef];
+		// Resize image
+		if (maxWidth > 0 && maxHeight > 0) {
+			thumbnail = [ImageUtilities imageWithImage:myLargeImage scaledToMaxWidth:maxWidth maxHeight:maxHeight];
+		}
+
         // Save to temp directory
         NSString* tempDirectory = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
         tempDirectory = [tempDirectory stringByAppendingString:@"/thumbnails/"];
@@ -49,7 +93,7 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
             data = UIImagePNGRepresentation(thumbnail);
             fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"thumb-%@.png",[[NSProcessInfo processInfo] globallyUniqueString]]];
         } else {
-            data = UIImageJPEGRepresentation(thumbnail, 1.0);
+            data = UIImageJPEGRepresentation(thumbnail, quality * 0.01);
             fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"thumb-%@.jpeg",[[NSProcessInfo processInfo] globallyUniqueString]]];
         }
 

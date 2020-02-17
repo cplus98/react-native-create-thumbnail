@@ -25,7 +25,7 @@ import org.apache.commons.io.comparator.LastModifiedFileComparator;
 public class CreateThumbnailModule extends ReactContextBaseJavaModule {
 
     private final ReactApplicationContext reactContext;
-    private static final long CACHE_DIR_MAX_SIZE = 104857600L; // 100MB
+    private static long maxCacheDirSize;
 
     public CreateThumbnailModule(ReactApplicationContext reactContext) {
         super(reactContext);
@@ -42,7 +42,11 @@ public class CreateThumbnailModule extends ReactContextBaseJavaModule {
         String filePath = options.hasKey("url") ? options.getString("url") : "";
         String type = options.hasKey("type") ? options.getString("type") : "remote";
         String format = options.hasKey("format") ? options.getString("format") : "jpeg";
-        int timeStamp = options.hasKey("timeStamp") ? options.getInt("timeStamp") : 1;
+        int timeStamp = options.hasKey("timeStamp") ? options.getInt("timeStamp") : 0;
+        int quality = options.hasKey("quality") ? options.getInt("quality") : 100;
+        int maxWidth = options.hasKey("maxWidth") ? options.getInt("maxWidth") : 0.0;
+        int maxHeight = options.hasKey("maxHeight") ? options.getInt("maxHeight") : 0.0;
+		maxCacheDirSize = options.hasKey("maxDirsize") ? options.getInt("maxDirsize") : 26214400; // 25mb
         MediaMetadataRetriever retriever = new MediaMetadataRetriever();
         String thumbnailDir = reactContext.getApplicationContext().getCacheDir().getAbsolutePath() + "/thumbnails";
         String fileName = "thumb-" + UUID.randomUUID().toString() + "." + format;
@@ -59,8 +63,14 @@ public class CreateThumbnailModule extends ReactContextBaseJavaModule {
                 retriever.setDataSource(filePath, new HashMap<String, String>());
             }
 
-            Bitmap image = retriever.getFrameAtTime(timeStamp * 1000000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+            Bitmap image = retriever.getFrameAtTime(timeStamp * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
             retriever.release();
+
+			// Resize image
+			if (maxWidth > 0 && maxHeight > 0) {
+				// Resize image code here!
+				// image.Resize()...
+			}
 
             File dir = new File(thumbnailDir);
             if (!dir.exists()) {
@@ -83,9 +93,9 @@ public class CreateThumbnailModule extends ReactContextBaseJavaModule {
             fOut.close();
 
             long newSize = image.getByteCount() + getDirSize(dir);
-            // free up some cached data if size of cache dir exceeds CACHE_DIR_MAX_SIZE
-            if (newSize > CACHE_DIR_MAX_SIZE) {
-                cleanDir(dir, CACHE_DIR_MAX_SIZE / 2);
+            // free up some cached data if size of cache dir exceeds maxCacheDirSize
+            if (newSize > maxCacheDirSize) {
+                cleanDir(dir, maxCacheDirSize / 2);
             }
 
             WritableMap map = Arguments.createMap();
