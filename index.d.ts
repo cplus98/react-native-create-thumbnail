@@ -8,6 +8,7 @@ declare module "react-native-create-thumbnail" {
 	maxWidth?: number;
 	maxHeight?: number;
 	maxDirSize?: number;
+	tolerance?: number;
   }
 
   export interface Thumbnail {

@@ -43,19 +43,19 @@ RCT_EXPORT_MODULE()
 RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
 {
     NSString *url = (NSString *)[config objectForKey:@"url"] ?: @"";
-    int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 1;
+     int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 0;
     NSString *type = (NSString *)[config objectForKey:@"type"] ?: @"remote";
     NSString *format = (NSString *)[config objectForKey:@"format"] ?: @"jpeg";
     int quality = [[config objectForKey:@"quality"] intValue] ?: 100;
-    int maxWidth = [[config objectForKey:@"maxWidth"] intValue] ?: 0.0;
-    int maxHeight = [[config objectForKey:@"maxHeight"] intValue] ?: 0.0;
+    int maxWidth = [[config objectForKey:@"maxWidth"] intValue] ?: 0;
+    int maxHeight = [[config objectForKey:@"maxHeight"] intValue] ?: 0;
+    int tolerance = [[config objectForKey:@"tolerance"] intValue] ?: 1;
     unsigned long long CTMaxDirSize = [[config objectForKey:@"maxDirsize"] longLongValue] ?: 26214400; // 25mb
     
     @try {
         NSURL *vidURL = nil;
         if ([type isEqual: @"local"]) {
-            url = [url stringByReplacingOccurrencesOfString:@"file://"
-                                                  withString:@""];
+            url = [url stringByReplacingOccurrencesOfString:@"file://" withString:@""];
             vidURL = [NSURL fileURLWithPath:url];
         } else {
             vidURL = [NSURL URLWithString:url];
@@ -64,11 +64,14 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
         AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:vidURL options:nil];
         AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
         generator.appliesPreferredTrackTransform = YES;
-        
-        NSError *err = NULL;
+		generator.requestedTimeToleranceBefore = CMTimeMake(tolerance, 1000);
+		generator.requestedTimeToleranceAfter = generator.requestedTimeToleranceBefore;
+
+		NSError *err = NULL;
         CMTime time = CMTimeMake(timeStamp, 1000);
-        
-        CGImageRef imgRef = [generator copyCGImageAtTime:time actualTime:NULL error:&err];
+        CMTime actTime = CMTimeMake(0, 0);
+
+        CGImageRef imgRef = [generator copyCGImageAtTime:time actualTime:&actTime error:&err];
         UIImage *thumbnail = [UIImage imageWithCGImage:imgRef];
 		// Resize image
 		if (maxWidth > 0 && maxHeight > 0) {
@@ -102,7 +105,7 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
         CGImageRelease(imgRef);
         resolve(@{
             @"path"     : fullPath,
-            @"width"    : [NSNumber numberWithFloat: thumbnail.size.width],
+			@"width"    : [NSNumber numberWithFloat: thumbnail.size.width],
             @"height"   : [NSNumber numberWithFloat: thumbnail.size.height]
         });
     } @catch(NSException *e) {
