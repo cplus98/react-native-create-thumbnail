@@ -41,7 +41,7 @@ import { createThumbnail } from "react-native-create-thumbnail";
 createThumbnail({
   url: "<path to video file>",
   type: "local"
-  timeStamp: 5
+  timeStamp: 5000
 })
   .then(response => {
     console.log({ response });
@@ -64,7 +64,7 @@ createThumbnail({
 | quality   |  `Number` (default `100`)   | Thumbnail quality (0 to 100)                       |
 | maxWidth  |  `Number` (default `0`)     | Maximum thumbnail width (Using with maxHeight)     |
 | maxHeight |  `Number` (default `0`).    | Maximum thumbnail width (Using with maxWidth)      |
-| tolerance |  `Number` (default `1`)     | Thumbnail timestamp tolerance (in milliseconds)    |
+| tolerance |  `Number` (default `1`)     | Thumbnail tolerance (in milliseconds, only iOS)    |
 
 ## Response Object
 
