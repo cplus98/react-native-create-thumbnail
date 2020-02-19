@@ -1,4 +1,4 @@
-# react-native-create-thumbnail
+# react-native-video-processing
 
 iOS/Android thumbnail generator with support for both local and remote videos. `react-native-create-thumbnail` is a wrapper around
 [`AVAssetImageGenerator`](https://developer.apple.com/documentation/avfoundation/avassetimagegenerator?language=objc) (iOS) and [`MediaMetadataRetriever`](https://developer.android.com/reference/android/media/MediaMetadataRetriever) (Android)
