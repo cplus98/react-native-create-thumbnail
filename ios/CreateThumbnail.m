@@ -14,7 +14,7 @@
         UIGraphicsBeginImageContext(size);
     }
     [image drawInRect:CGRectMake(0, 0, size.width, size.height)];
-    UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();    
+    UIImage *newImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
 
     return newImage;
@@ -40,9 +40,26 @@
 
 RCT_EXPORT_MODULE()
 
+- (NSString *) createDirectory: (NSString *)name withSize: (unsigned long long)maxSize {
+	NSError *err = NULL;
+
+	// Save to temp directory
+	NSString* tempDirectory = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+	tempDirectory = [tempDirectory stringByAppendingString:[NSString stringWithFormat:@"/%@/", name]];
+	// Create thumbnail directory if not exists
+	[[NSFileManager defaultManager] createDirectoryAtPath:tempDirectory withIntermediateDirectories:YES attributes:nil error:&err];
+	// Clean directory
+	unsigned long long size = [self sizeOfFolderAtPath:tempDirectory];
+	if (size >= maxSize) {
+		[self cleanDir:tempDirectory forSpace:maxSize / 2];
+	}
+	
+	return err == NULL ? tempDirectory : @"";
+}
+
 RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
     NSString *url = (NSString *)[config objectForKey:@"url"] ?: @"";
-     int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 0;
+	int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 0;
     NSString *type = (NSString *)[config objectForKey:@"type"] ?: @"remote";
     NSString *format = (NSString *)[config objectForKey:@"format"] ?: @"jpeg";
     int quality = [[config objectForKey:@"quality"] intValue] ?: 100;
@@ -77,17 +94,8 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
 			thumbnail = [ImageUtilities imageWithImage:thumbnail scaledToMaxWidth:maxWidth maxHeight:maxHeight];
 		}
 
-        // Save to temp directory
-        NSString* tempDirectory = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-        tempDirectory = [tempDirectory stringByAppendingString:@"/thumbnails/"];
-        // Create thumbnail directory if not exists
-        [[NSFileManager defaultManager] createDirectoryAtPath:tempDirectory withIntermediateDirectories:YES attributes:nil error:&err];
-        // Clean directory
-        unsigned long long size = [self sizeOfFolderAtPath:tempDirectory];
-        if (size >= CTMaxDirSize) {
-            [self cleanDir:tempDirectory forSpace:CTMaxDirSize / 2];
-        }
-        
+		NSString* tempDirectory = [self createDirectory:@"thumbnails" withSize:CTMaxDirSize];
+
         // Generate thumbnail
         NSData *data = nil;
         NSString *fullPath = nil;
@@ -142,53 +150,60 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
 
 RCT_EXPORT_METHOD(trim:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
 	NSString *url = (NSString *)[config objectForKey:@"url"] ?: @"";
-	int msStart = [[config objectForKey:@"start"] intValue] ?: 0;
-	int msEnd = [[config objectForKey:@"end"] intValue] ?: 1;
+	int msStart = [[config objectForKey:@"startTime"] intValue] ?: 0;
+	int msEnd = [[config objectForKey:@"endTime"] intValue] ?: 1;
     unsigned long long CTMaxDirSize = [[config objectForKey:@"maxDirsize"] longLongValue] ?: 26214400; // 25mb
+	NSString *quality = [config objectForKey:@"quality"];
+
+	if ([quality isEqualToString:@"low"]) quality = AVAssetExportPresetLowQuality;
+	else if ([quality isEqualToString:@"medium"]) quality = AVAssetExportPresetMediumQuality;
+	else quality = AVAssetExportPresetMediumQuality;
 
     @try {
         NSURL *vidURL = nil;
 		url = [url stringByReplacingOccurrencesOfString:@"file://" withString:@""];
 		vidURL = [NSURL fileURLWithPath:url];
-
-        NSString *fullPath = nil;
-        NSString* tempDirectory = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
-        tempDirectory = [tempDirectory stringByAppendingString:@"/trimmed/"];
-		fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"video-%@.png",[[NSProcessInfo processInfo] globallyUniqueString]]];
+		
+		NSString *tempDirectory = [self createDirectory:@"trimmed" withSize:CTMaxDirSize];
+		NSString *fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"video-%@.mp4",[[NSProcessInfo processInfo] globallyUniqueString]]];
 
         AVURLAsset *anAsset = [[AVURLAsset alloc] initWithURL:vidURL options:nil];
 		NSArray *compatiblePresets = [AVAssetExportSession exportPresetsCompatibleWithAsset:anAsset];
-		if ([compatiblePresets containsObject:AVAssetExportPresetLowQuality]) {
-		    AVAssetExportSession *exportSession = [[AVAssetExportSession alloc]
-    	    initWithAsset:anAsset presetName:AVAssetExportPresetLowQuality];
+		if ([compatiblePresets containsObject:quality]) {
+		    AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:anAsset presetName:quality];
 
     		// Implementation continues.
-		    exportSession.outputURL = fullPath;
+		    exportSession.outputURL = [NSURL fileURLWithPath:fullPath];
 			exportSession.outputFileType = AVFileTypeQuickTimeMovie;
 		
-			CMTime start = CMTimeMakeWithSeconds(msStart, 1000);
-			CMTime duration = CMTimeMakeWithSeconds(msEnd, 1000);
+			CMTime start = CMTimeMake(msStart, 1000);
+			CMTime duration = CMTimeMake(msEnd - msStart, 1000);
 			CMTimeRange range = CMTimeRangeMake(start, duration);
 			exportSession.timeRange = range;
 
-			// [exportSession exportAsynchronouslyWithCompletionHandler:^{
-		
-			// 	switch ([exportSession status]) {
-			// 		case AVAssetExportSessionStatusFailed:
-			// 			NSLog(@"Export failed: %@", [[exportSession error] localizedDescription]);
-			// 			break;
-			// 		case AVAssetExportSessionStatusCancelled:
-			// 			NSLog(@"Export canceled");
-			// 			break;
-			// 		default:
-			// 			break;
-			// 	}
-			// }];
-		}
+			[exportSession exportAsynchronouslyWithCompletionHandler:^{
+			 	switch ([exportSession status]) {
+			 		case AVAssetExportSessionStatusCompleted:
+						resolve(@{
+							@"path"     : fullPath,
+						});
+			 			break;
+			 		// case AVAssetExportSessionStatusFailed:
+			 		// 	NSLog(@"Export failed: %@", [[exportSession error] localizedDescription]);
+			 		// 	break;
+			 		default:
+						resolve(@{
+							@"path"     : @"",
+						});
+			 			break;
+			 	}
+			 }];
 
-        resolve(@{
-            @"path"     : fullPath,
-        });
+		} else {
+			resolve(@{
+				@"path"     : @"",
+			});
+		}
 
     } @catch(NSException *e) {
         reject(e.reason, nil, nil);
