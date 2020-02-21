@@ -40,8 +40,7 @@
 
 RCT_EXPORT_MODULE()
 
-RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject)
-{
+RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
     NSString *url = (NSString *)[config objectForKey:@"url"] ?: @"";
      int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 0;
     NSString *type = (NSString *)[config objectForKey:@"type"] ?: @"remote";
@@ -139,6 +138,61 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
         }
     }
     return;
+}
+
+RCT_EXPORT_METHOD(trim:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
+	NSString *url = (NSString *)[config objectForKey:@"url"] ?: @"";
+	int msStart = [[config objectForKey:@"start"] intValue] ?: 0;
+	int msEnd = [[config objectForKey:@"end"] intValue] ?: 1;
+    unsigned long long CTMaxDirSize = [[config objectForKey:@"maxDirsize"] longLongValue] ?: 26214400; // 25mb
+
+    @try {
+        NSURL *vidURL = nil;
+		url = [url stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+		vidURL = [NSURL fileURLWithPath:url];
+
+        NSString *fullPath = nil;
+        NSString* tempDirectory = [NSSearchPathForDirectoriesInDomains(NSCachesDirectory, NSUserDomainMask, YES) lastObject];
+        tempDirectory = [tempDirectory stringByAppendingString:@"/trimmed/"];
+		fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"video-%@.png",[[NSProcessInfo processInfo] globallyUniqueString]]];
+
+        AVURLAsset *anAsset = [[AVURLAsset alloc] initWithURL:vidURL options:nil];
+		NSArray *compatiblePresets = [AVAssetExportSession exportPresetsCompatibleWithAsset:anAsset];
+		if ([compatiblePresets containsObject:AVAssetExportPresetLowQuality]) {
+		    AVAssetExportSession *exportSession = [[AVAssetExportSession alloc]
+    	    initWithAsset:anAsset presetName:AVAssetExportPresetLowQuality];
+
+    		// Implementation continues.
+		    exportSession.outputURL = fullPath;
+			exportSession.outputFileType = AVFileTypeQuickTimeMovie;
+		
+			CMTime start = CMTimeMakeWithSeconds(msStart, 1000);
+			CMTime duration = CMTimeMakeWithSeconds(msEnd, 1000);
+			CMTimeRange range = CMTimeRangeMake(start, duration);
+			exportSession.timeRange = range;
+
+			// [exportSession exportAsynchronouslyWithCompletionHandler:^{
+		
+			// 	switch ([exportSession status]) {
+			// 		case AVAssetExportSessionStatusFailed:
+			// 			NSLog(@"Export failed: %@", [[exportSession error] localizedDescription]);
+			// 			break;
+			// 		case AVAssetExportSessionStatusCancelled:
+			// 			NSLog(@"Export canceled");
+			// 			break;
+			// 		default:
+			// 			break;
+			// 	}
+			// }];
+		}
+
+        resolve(@{
+            @"path"     : fullPath,
+        });
+
+    } @catch(NSException *e) {
+        reject(e.reason, nil, nil);
+    }
 }
 
 @end
