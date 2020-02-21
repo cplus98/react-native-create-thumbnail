@@ -1,22 +1,20 @@
 # react-native-video-processing
 
-iOS/Android thumbnail generator with support for both local and remote videos. `react-native-create-thumbnail` is a wrapper around
+iOS/Android video trimmer and thumbnail generator with support for both local and remote videos. `react-native-video-processing` is a wrapper around
 [`AVAssetImageGenerator`](https://developer.apple.com/documentation/avfoundation/avassetimagegenerator?language=objc) (iOS) and [`MediaMetadataRetriever`](https://developer.android.com/reference/android/media/MediaMetadataRetriever) (Android)
-
-[![npm](https://img.shields.io/npm/v/react-native-create-thumbnail.svg)](https://npmjs.com/package/react-native-create-thumbnail) [![npm](https://img.shields.io/npm/dm/react-native-create-thumbnail.svg)](https://npmjs.com/package/react-native-create-thumbnail) [![License](https://img.shields.io/npm/l/react-native-create-thumbnail.svg)](https://www.npmjs.com/package/react-native-create-thumbnail)
 
 ## Getting started
 
 1. Install library from `npm`
 
    ```bash
-   yarn add react-native-create-thumbnail
+   yarn add react-native-video-processing
    ```
 
    or
 
    ```bash
-   npm i react-native-create-thumbnail
+   npm i react-native-video-processing
    ```
 
 2. Link native code
@@ -30,13 +28,13 @@ iOS/Android thumbnail generator with support for both local and remote videos. `
    Pre 0.60
 
    ```bash
-   react-native link react-native-create-thumbnail
+   react-native link react-native-video-processing
    ```
 
 ## Usage
 
 ```javascript
-import { createThumbnail } from "react-native-create-thumbnail";
+import { createThumbnail } from "react-native-video-processing";
 
 createThumbnail({
   url: "<path to video file>",

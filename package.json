@@ -1,5 +1,5 @@
 {
-	"name": "react-native-create-thumbnail",
+	"name": "react-native-video-processing",
 	"title": "React Native Create Thumbnail",
 	"version": "1.0.6",
 	"description": "iOS/Android thumbnail generator with support for both local and remote videos",
@@ -9,8 +9,8 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/cplus98/react-native-create-thumbnail.git",
-		"baseUrl": "https://github.com/cplus98/react-native-create-thumbnail"
+		"url": "git+https://github.com/cplus98/react-native-video-processing.git",
+		"baseUrl": "https://github.com/cplus98/react-native-video-processing"
 	},
 	"keywords": [
 		"react-native"

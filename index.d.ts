@@ -1,4 +1,4 @@
-declare module "react-native-create-thumbnail" {
+declare module "react-native-video-processing" {
   export interface Config {
     url: string;
     timeStamp?: number;
