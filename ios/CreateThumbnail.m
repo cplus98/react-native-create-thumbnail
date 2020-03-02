@@ -60,7 +60,6 @@ RCT_EXPORT_MODULE()
 RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject) {
     NSString *url = (NSString *)[config objectForKey:@"url"] ?: @"";
 	int timeStamp = [[config objectForKey:@"timeStamp"] intValue] ?: 0;
-    NSString *type = (NSString *)[config objectForKey:@"type"] ?: @"remote";
     NSString *format = (NSString *)[config objectForKey:@"format"] ?: @"jpeg";
     int quality = [[config objectForKey:@"quality"] intValue] ?: 100;
     int maxWidth = [[config objectForKey:@"maxWidth"] intValue] ?: 0;
@@ -69,13 +68,7 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
     unsigned long long CTMaxDirSize = [[config objectForKey:@"maxDirsize"] longLongValue] ?: 26214400; // 25mb
     
     @try {
-        NSURL *vidURL = nil;
-        if ([type isEqual: @"local"]) {
-            url = [url stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-            vidURL = [NSURL fileURLWithPath:url];
-        } else {
-            vidURL = [NSURL URLWithString:url];
-        }
+        NSURL *vidURL = [NSURL URLWithString:url];
 
         AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:vidURL options:nil];
         AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
@@ -160,9 +153,7 @@ RCT_EXPORT_METHOD(trim:(NSDictionary *)config findEventsWithResolver:(RCTPromise
 	else quality = AVAssetExportPresetMediumQuality;
 
     @try {
-        NSURL *vidURL = nil;
-		url = [url stringByReplacingOccurrencesOfString:@"file://" withString:@""];
-		vidURL = [NSURL fileURLWithPath:url];
+        NSURL *vidURL = [NSURL fileURLWithPath:url];
 		
 		NSString *tempDirectory = [self createDirectory:@"trimmed" withSize:CTMaxDirSize];
 		NSString *fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"video-%@.mp4",[[NSProcessInfo processInfo] globallyUniqueString]]];
