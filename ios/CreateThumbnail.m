@@ -70,7 +70,7 @@ RCT_EXPORT_METHOD(create:(NSDictionary *)config findEventsWithResolver:(RCTPromi
     @try {
         NSURL *vidURL = [NSURL URLWithString:url];
 
-        AVURLAsset *asset = [[AVURLAsset alloc] initWithURL:vidURL options:nil];
+		AVURLAsset *asset = [AVURLAsset URLAssetWithURL:vidURL options:nil];
         AVAssetImageGenerator *generator = [[AVAssetImageGenerator alloc] initWithAsset:asset];
         generator.appliesPreferredTrackTransform = YES;
 		generator.requestedTimeToleranceBefore = CMTimeMake(tolerance, 1000);
@@ -150,42 +150,53 @@ RCT_EXPORT_METHOD(trim:(NSDictionary *)config findEventsWithResolver:(RCTPromise
 
 	if ([quality isEqualToString:@"low"]) quality = AVAssetExportPresetLowQuality;
 	else if ([quality isEqualToString:@"medium"]) quality = AVAssetExportPresetMediumQuality;
-	else quality = AVAssetExportPresetMediumQuality;
+	else quality = AVAssetExportPresetHighestQuality;
 
     @try {
-        NSURL *vidURL = [NSURL fileURLWithPath:url];
-		
-		NSString *tempDirectory = [self createDirectory:@"trimmed" withSize:CTMaxDirSize];
-		NSString *fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"video-%@.mp4",[[NSProcessInfo processInfo] globallyUniqueString]]];
+        NSURL *vidURL = [NSURL URLWithString:url];
+		NSString *tempDirectory = [self createDirectory:@"videos" withSize:CTMaxDirSize];
 
-        AVURLAsset *anAsset = [[AVURLAsset alloc] initWithURL:vidURL options:nil];
+		AVURLAsset *anAsset = [AVURLAsset URLAssetWithURL:vidURL options:nil];
 		NSArray *compatiblePresets = [AVAssetExportSession exportPresetsCompatibleWithAsset:anAsset];
 		if ([compatiblePresets containsObject:quality]) {
 		    AVAssetExportSession *exportSession = [[AVAssetExportSession alloc] initWithAsset:anAsset presetName:quality];
 
     		// Implementation continues.
+			NSString *fullPath = [tempDirectory stringByAppendingPathComponent: [NSString stringWithFormat:@"video-%@.mp4",[[NSProcessInfo processInfo] globallyUniqueString]]];
 		    exportSession.outputURL = [NSURL fileURLWithPath:fullPath];
-			exportSession.outputFileType = AVFileTypeQuickTimeMovie;
-		
+			exportSession.outputFileType = AVFileTypeMPEG4;
+			exportSession.shouldOptimizeForNetworkUse = YES;
+
 			CMTime start = CMTimeMake(msStart, 1000);
 			CMTime duration = CMTimeMake(msEnd - msStart, 1000);
 			CMTimeRange range = CMTimeRangeMake(start, duration);
 			exportSession.timeRange = range;
+
+//			exportSession.progress;
 
 			[exportSession exportAsynchronouslyWithCompletionHandler:^{
 			 	switch ([exportSession status]) {
 			 		case AVAssetExportSessionStatusCompleted:
 						resolve(@{
 							@"path"     : fullPath,
+							@"code"     : @"COMPLETED",
 						});
 			 			break;
-			 		// case AVAssetExportSessionStatusFailed:
-			 		// 	NSLog(@"Export failed: %@", [[exportSession error] localizedDescription]);
-			 		// 	break;
-			 		default:
+					case AVAssetExportSessionStatusFailed:
+						resolve(@{
+							@"path"     : exportSession.error.userInfo.description,
+							@"code"     : @"FAILED_TO_TRIM",
+						});
+						break;
+						
+					case AVAssetExportSessionStatusCancelled:
 						resolve(@{
 							@"path"     : @"",
+							@"code"     : @"CANCELLED",
 						});
+						break;
+						
+			 		default:
 			 			break;
 			 	}
 			 }];
@@ -193,6 +204,7 @@ RCT_EXPORT_METHOD(trim:(NSDictionary *)config findEventsWithResolver:(RCTPromise
 		} else {
 			resolve(@{
 				@"path"     : @"",
+				@"code"     : @"NOT_SUPPORTED_QUALITY",
 			});
 		}
 
