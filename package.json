@@ -1,7 +1,7 @@
 {
 	"name": "react-native-video-processing",
 	"title": "React Native Video Processing",
-	"version": "1.0.7",
+	"version": "1.0.8",
 	"description": "iOS/Android thumbnail generator with support for both local and remote videos",
 	"main": "index.js",
 	"scripts": {
